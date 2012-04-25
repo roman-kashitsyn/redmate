@@ -2,7 +2,7 @@ import unittest
 from mock import Mock
 import redmate
 
-class MapperTest(unittest.TestCase):
+class MapToHashTest(unittest.TestCase):
 
     def setUp(self):
         self.db = Mock(name="db-adapter-mock")
@@ -19,10 +19,10 @@ class MapperTest(unittest.TestCase):
         self.db.select.return_value = rows
 
 
-        self.mapper.to_hash(table="[MyTable]", key_pattern="row:{id}")
+        self.mapper.to_hash(table="[Table]", key_pattern="row:{id}")
         self.mapper.run()
 
-        query="select * from [MyTable]"
+        query="select * from [Table]"
         self.db.select.assert_called_with(query=query, params=None, as_hash=True)
         self.redis.pipeline.assert_called_with()
         self.redis.pipeline().hmset.assert_any_call("row:1", rows[0])

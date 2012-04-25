@@ -27,4 +27,27 @@ class ToHashRule(Db2RedisRule):
             pipe.hmset(key, row)
         pipe.execute()
 
-    
+class ToListRule(Db2RedisRule):
+
+    def __init__(self, *args, **kwargs):
+        super(ToListRule, self).__init__(*args, **kwargs)
+        self.key = kwargs.get("key")
+        self.transformer = kwargs.get("transformer", str)
+        if not self.key:
+            raise ValueError("No list key specified")
+
+    def run(self, db, redis):
+        rows = db.select(query=self.query, params=self.params)
+        if not rows:
+            return
+        key = self.key
+        transform = self.transformer
+        pipe = redis.pipeline()
+        for row in rows:
+            value = transform(row)
+            pipe.lpush(key, value)
+        pipe.execute()
+        
+
+        
+
