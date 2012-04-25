@@ -2,6 +2,7 @@ class Db2RedisRule(object):
     def __init__(self, *args, **kwargs):
         self.table = kwargs.get("table")
         self.query = kwargs.get("query")
+        self.params = kwargs.get("params")
         if not self.table and not self.query:
             raise ValueError("No either table or query is specified")
         if not self.query:
@@ -16,7 +17,7 @@ class ToHashRule(Db2RedisRule):
             raise ValueError("No key pattern specified")
 
     def run(self, db, redis):
-        rows = db.select(query=self.query, as_hash=True)
+        rows = db.select(query=self.query, params=self.params, as_hash=True)
         if not rows:
             return
         key_pattern = self.key_pattern

@@ -39,7 +39,7 @@ class DbAdapterTest(unittest.TestCase):
         self.set_row_data(row_data)
 
         query = "select * from t where f=?"
-        rows = self.db.select(query, "val")
+        rows = self.db.select(query=query, params="val")
         self.assertEqual(row_data[0], next(rows))
         self.assertRaises(StopIteration, next, rows)
         self.cursor.execute.assert_called_with(query, "val")
