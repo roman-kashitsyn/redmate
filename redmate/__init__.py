@@ -26,6 +26,12 @@ class Mapper(object):
         """
         self._rules.append(rules.ToListRule(*args, **kwargs))
 
+    def to_set(self, *args, **kwargs):
+        """
+        Adds rule to map table or query into set
+        """
+        self._rules.append(rules.ToSetRule(*args, **kwargs))
+
     def run(self):
         db, redis = self.db, self.redis
         for rule in self._rules:

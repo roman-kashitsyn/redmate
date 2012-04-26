@@ -8,6 +8,21 @@ class Db2RedisRule(object):
         if not self.query:
             self.query = "select * from {0}".format(self.table)
 
+    def run(self, db, redis):
+        rows = self._query(db)
+        if not rows:
+            return
+        pipeline = redis.pipeline()
+        for row in rows:
+            self._with_pipeline(row, pipeline)
+        pipeline.execute()
+
+    def _query(self, db):
+        return db.select(query=self.query, params=self.params)
+
+    def _with_pipeline(row, pipeline):
+        raise NotImplementedError
+
 class ToHashRule(Db2RedisRule):
 
     def __init__(self, *args, **kwargs):
@@ -16,38 +31,37 @@ class ToHashRule(Db2RedisRule):
         if not self.key_pattern:
             raise ValueError("No key pattern specified")
 
-    def run(self, db, redis):
-        rows = db.select(query=self.query, params=self.params, as_hash=True)
-        if not rows:
-            return
-        key_pattern = self.key_pattern
-        pipe = redis.pipeline()
-        for row in rows:
-            key = key_pattern.format(**row)
-            pipe.hmset(key, row)
-        pipe.execute()
+    def _query(self, db):
+        return db.select(query=self.query, params=self.params, as_hash=True)
+
+    def _with_pipeline(self, row, pipeline):
+        key = self.key_pattern.format(**row)
+        pipeline.hmset(key, row)
+
 
 class ToListRule(Db2RedisRule):
 
     def __init__(self, *args, **kwargs):
         super(ToListRule, self).__init__(*args, **kwargs)
         self.key = kwargs.get("key")
-        self.transformer = kwargs.get("transformer", str)
+        self.transform = kwargs.get("transform", lambda r: r[0])
         if not self.key:
             raise ValueError("No list key specified")
 
-    def run(self, db, redis):
-        rows = db.select(query=self.query, params=self.params)
-        if not rows:
-            return
-        key = self.key
-        transform = self.transformer
-        pipe = redis.pipeline()
-        for row in rows:
-            value = transform(row)
-            pipe.lpush(key, value)
-        pipe.execute()
+    def _with_pipeline(self, row, pipeline):
+        pipeline.lpush(self.key, self.transform(row))
         
+class ToSetRule(Db2RedisRule):
+
+    def __init__(self, *args, **kwargs):
+        super(ToSetRule, self).__init__(*args, **kwargs)
+        self.key = kwargs.get("key")
+        self.transform = kwargs.get("transform", lambda r: r[0])
+        if not self.key:
+            raise ValueError("No list key specified")
+
+    def _with_pipeline(self, row, pipeline):
+        pipeline.sadd(self.key, self.transform(row))
 
         
 
