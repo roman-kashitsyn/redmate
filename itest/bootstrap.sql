@@ -12,6 +12,10 @@ create table if not exists `redmate`.`employees` (
        department_id int not null references `redmate`.`departments`(id)
 );
 
+delete from `redmate`.`departments`;
+
+delete from `redmate`.`employees`;
+
 insert into `redmate`.`departments` (id, name)
 values
 (1, 'IT'), (2, 'Marketing'), (3, 'Sales');
