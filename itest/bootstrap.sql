@@ -22,4 +22,8 @@ values
 
 insert into `redmate`.`employees` (id, name, salary, department_id)
 values
-(1, 'Mark', 100000, 1), (2, 'Sally', 80000, 2), (3, 'Stuart', 50000, 3);
+(1, 'Mark', 100000, 1),
+(2, 'Sergey', 120000, 1),
+(3, 'Sally', 80000, 2),
+(4, 'Stuart', 75000, 2),
+(5, 'Martin', 50000, 3);

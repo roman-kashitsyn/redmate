@@ -3,8 +3,7 @@ class RowIterator:
     def __init__(self, cursor, as_hash):
         self.cursor = cursor
         self.as_hash = as_hash
-        if as_hash:
-            self.columns = [d[0] for d in self.cursor.description]
+        self.columns = [d[0] for d in self.cursor.description]
 
     def __iter__(self):
         return self
@@ -14,9 +13,12 @@ class RowIterator:
         if not result:
             raise StopIteration
         if self.as_hash:
-            return dict(zip(self.columns, result))
+            return self.make_dict(result)
         else:
             return result
+
+    def make_dict(self, row):
+        return dict(zip(self.columns, row))
 
     def __next__(self):
         return self.next()

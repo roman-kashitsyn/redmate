@@ -18,6 +18,7 @@ class MySqlMappingTest(unittest.TestCase):
             port=conf.getint("db", "port"),
             user=conf.get("db", "user"))
         bootstrap.init_db(conn)
+        self.redis.flushdb()
         self.db = redmate.Db(conn)
         self.mapper = redmate.Mapper(self.db, self.redis)
 
@@ -34,4 +35,14 @@ class MySqlMappingTest(unittest.TestCase):
             self.assertEqual(row[0], self.redis.hget("dep:" + row[0], "id"))
 
     def test_employees_in_departments_set_mapping(self):
-        
+        """
+        Employees in Departments many-to-one relation should be mapped to
+        redis set
+        """
+        emps_by_dep = {'1': {'1', '2'}, '2': {'3', '4'}, '3': {'5'}}
+        self.mapper.to_set(query="select id, department_id from redmate.employees",
+                           key_pattern="dep:{department_id}:employees")
+        self.mapper.run()
+        for entry in emps_by_dep.items():
+            self.assertEqual(entry[1],
+                             self.redis.smembers("dep:{0[0]}:employees".format(entry)))
