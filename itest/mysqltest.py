@@ -46,3 +46,19 @@ class MySqlMappingTest(unittest.TestCase):
         for entry in emps_by_dep.items():
             self.assertEqual(entry[1],
                              self.redis.smembers("dep:{0[0]}:employees".format(entry)))
+
+    def test_employees_by_salary_index(self):
+        """
+        ``employees-by-salary`` index should be successfully created as redis sorted set
+        """
+        key="employees-by-salary"
+        emps_by_salary = {50000: ['5'], 75000: ['4'], 80000: ['3'], 120000: ['2'],
+                          100000: ['1']}
+        self.mapper.to_sorted_set(query="select id, salary from redmate.employees",
+                                  key_pattern=key, score="salary")
+        self.mapper.run()
+
+        for sal in emps_by_salary.items():
+            self.assertEqual(sal[1],
+                             self.redis.zrangebyscore(key, sal[0] - 1, sal[0] + 1))
+

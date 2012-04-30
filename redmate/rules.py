@@ -68,6 +68,9 @@ class ToSortedSetRule(ToSetRule):
     def _get_score(self, row, rows):
         if callable(self.score):
             return self.score(row)
+        elif type(self.score) == type(""):
+            colnum = rows.columns.index(self.score)
+            return row[colnum]
         elif self._score_is_number():
             return self.score
 
