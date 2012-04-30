@@ -8,13 +8,10 @@ class MapToSetTest(unittest.TestCase):
         self.db = Mock(name="db-adapter-mock")
         self.redis = Mock(name="redis-client-mock")
         self.mapper = redmate.Mapper(self.db, self.redis)
-        
-        rows = [(1, "Spam"), (2, "Egg")]
-        as_dict =  map(lambda x: dict(zip(["id", "word"], x)), rows)
-        rowmock = MagicMock(name="row-iterator-mock")
-        rowmock.__iter__.return_value = rows
-        rowmock.make_dict.side_effect = as_dict
-        self.db.select.return_value = rowmock
+
+        cols = ("id", "word")        
+        rows = ((1, "Spam"), (2, "Egg"))
+        self.db.select.return_value = redmate.test.mock_row_iterator(rows, cols)
 
     def test_map_query_to_set(self):
         """
@@ -22,7 +19,7 @@ class MapToSetTest(unittest.TestCase):
         by default
         """
         query = "select id, word from mems limit 2"
-        self.mapper.to_set(query=query, key="set")
+        self.mapper.to_set(query=query, key_pattern="set")
         self.mapper.run()
         
         self.db.select.assert_called_with(query=query, params=None)

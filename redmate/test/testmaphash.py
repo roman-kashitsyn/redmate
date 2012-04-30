@@ -16,14 +16,15 @@ class MapToHashTest(unittest.TestCase):
         """
         rows = ({"id": 1, "field": "abc"}, {"id": 2, "field": "bcd"})
 
-        self.db.select.return_value = rows
+        self.db.select.return_value = redmate.test.mock_row_iterator(
+            ((1, "abc"), (2, "bcd")), ("id", "field"))
 
 
         self.mapper.to_hash(table="[Table]", key_pattern="row:{id}")
         self.mapper.run()
 
         query="select * from [Table]"
-        self.db.select.assert_called_with(query=query, params=None, as_hash=True)
+        self.db.select.assert_called_with(query=query, params=None)
         self.redis.pipeline.assert_called_with()
         self.redis.pipeline().hmset.assert_any_call("row:1", rows[0])
         self.redis.pipeline().hmset.assert_any_call("row:2", rows[1])
@@ -35,13 +36,14 @@ class MapToHashTest(unittest.TestCase):
         pattern for keys
         """
         rows = ({"q": 1, "x": 0}, {"q": 2, "x": 1})
-        self.db.select.return_value = rows
+        self.db.select.return_value = redmate.test.mock_row_iterator(
+            ((1, 0), (2, 1)), ("q", "x"))
         
         query = "select q, x from T where x < 2"
         self.mapper.to_hash(query=query, key_pattern="x:{x}")
         self.mapper.run()
         
-        self.db.select.assert_called_with(query=query, params=None, as_hash=True)
+        self.db.select.assert_called_with(query=query, params=None)
         self.redis.pipeline().hmset.assert_any_call("x:0", rows[0])
         self.redis.pipeline().hmset.assert_any_call("x:1", rows[1])
 
@@ -50,14 +52,14 @@ class MapToHashTest(unittest.TestCase):
         to_hash should map query with params
         """
         rows = ({"q": 1, "x": 0}, {"q": 2, "x": 1})
-        self.db.select.return_value = rows
+        self.db.select.return_value = redmate.test.mock_row_iterator(
+            ((1, 0), (2, 1)), ("q", "x"))
         
         query = "select q, x from T where x < ?"
         self.mapper.to_hash(query=query, params=(2), key_pattern="x:{x}")
         self.mapper.run()
         
-        self.db.select.assert_called_with(
-            query=query, params=(2), as_hash=True)
+        self.db.select.assert_called_with(query=query, params=(2))
         self.redis.pipeline().hmset.assert_any_call("x:0", rows[0])
         self.redis.pipeline().hmset.assert_any_call("x:1", rows[1])
 
