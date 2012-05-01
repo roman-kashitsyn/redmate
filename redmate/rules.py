@@ -1,5 +1,8 @@
 import keyformat
 
+def take_first(row):
+    return row[0]
+
 class Db2RedisRule(object):
     def __init__(self, *args, **kwargs):
         self.table = kwargs.get("table")
@@ -11,16 +14,25 @@ class Db2RedisRule(object):
         if not self.query:
             self.query = "select * from {0}".format(self.table)
 
-    def run(self, db, redis):
+    def run(self, db, redis, max_pipelined=None):
         rows = self._query(db)
         if not rows:
             return
         
+        cmd_count = 0
         pipeline = redis.pipeline()
-        for row in rows:
-            key = self.key_pattern.format(row, rows)
-            self._with_pipeline(key, row, rows, pipeline)
-        pipeline.execute()
+        try:
+            for row in rows:
+                key = self.key_pattern.format(row, rows)
+                self._with_pipeline(key, row, rows, pipeline)
+                cmd_count += 1
+                if max_pipelined and cmd_count >= max_pipelined:
+                    pipeline.execute()
+                    cmd_count = 0
+            if cmd_count:
+                pipeline.execute()
+        finally:
+            pipeline.reset()
 
     def _query(self, db):
         return db.select(query=self.query, params=self.params)
@@ -36,12 +48,11 @@ class ToHashRule(Db2RedisRule):
     def _with_pipeline(self, key, row, rows, pipeline):
         pipeline.hmset(key, rows.make_dict(row))
 
-
 class ToListRule(Db2RedisRule):
 
     def __init__(self, *args, **kwargs):
         super(ToListRule, self).__init__(*args, **kwargs)
-        self.transform = kwargs.get("transform", lambda r: r[0])
+        self.transform = kwargs.get("transform", take_first)
 
     def _with_pipeline(self, key, row, rows, pipeline):
         pipeline.lpush(key, self.transform(row))
@@ -50,7 +61,7 @@ class ToSetRule(Db2RedisRule):
 
     def __init__(self, *args, **kwargs):
         super(ToSetRule, self).__init__(*args, **kwargs)
-        self.transform = kwargs.get("transform", lambda r: r[0])
+        self.transform = kwargs.get("transform", take_first)
 
     def _with_pipeline(self, key, row, rows, pipeline):
         pipeline.sadd(key, self.transform(row))

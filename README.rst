@@ -23,19 +23,21 @@ The main concept of the package is *mapper* that can move data from
 one source to another. Mapper is driven by a set of mapping *rules*.
 Currently only mapping from relational DB to redis is implemented.
 
-Here are some examples (assuming you have imported redmate package
-and created both redis (``redis`` variable) connection and db
-connection ``db_conn`` variable):
+It is very easy to create a mapper: ::
+
+    # assuming db_conn is a connection obtained via PEP-249 api
+    # and redis is a redis client
+    mapper = redmate.Mapper(redmate.Db(db_conn), redis)
+
+Here are some examples of mapping:
 
 - Mapping a table to redis hash::
 
-      mapper = redmate.Mapper(redis, redmate.Db(db_conn))
       mapper.to_hash(table="Eggs", key_pattern="egg:{id}")
       mapper.run()
 
 - Mapping a query to list::
 
-      mapper = redmate.Mapper(redis, redmate.Db(db_conn))
       mapper.to_list(query="select id, title from Posts",
                      key_pattern = "posts"
                      transform=lambda row: '-'.join(map(str, row)))
@@ -44,14 +46,12 @@ connection ``db_conn`` variable):
 
 - Mapping a query to set (One-To-Many relation)::
 
-      mapper = redmate.Mapper(redis, redmate.Db(db_conn))
       mapper.to_set(query="select id, department_id from Employee",
                     key_pattern="dep:{department_id}:employees")
       mapper.run()
 
 - Mapping a query to sorted set::
 
-      mapper = redmate.Mapper(redis, redmate.Db(db_conn))
       mapper.to_sorted_set(query="select id, salary from Employees",
                            key_pattern="emp:salary", score="salary")
       mapper.run()

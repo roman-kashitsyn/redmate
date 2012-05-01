@@ -11,6 +11,7 @@ class Mapper(object):
         self.db = db
         self.redis = redis
         self._rules = []
+        self.max_pipelined = self._default_max_pipelined()
 
     def to_hash(self, *args, **kwargs):
         """
@@ -38,7 +39,16 @@ class Mapper(object):
         """
         self._rules.append(rules.ToSortedSetRule(*args, **kwargs))
 
+    def _default_max_pipelined(self):
+        """
+        Returns default number of commands pipelined with redis client
+        """
+        return 10
+
     def run(self):
+        """
+        Runs the mapping process.
+        """
         db, redis = self.db, self.redis
         for rule in self._rules:
-            rule.run(db, redis)
+            rule.run(db, redis, max_pipelined=self.max_pipelined)
