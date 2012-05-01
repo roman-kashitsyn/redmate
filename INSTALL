@@ -1,0 +1,4 @@
+Please use
+ python setup.py install
+
+and report errors to Roman Kashitsyn (roman.kashitsyn@gmail.com)
