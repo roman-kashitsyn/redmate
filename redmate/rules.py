@@ -34,11 +34,18 @@ class Db2RedisRule(object):
         finally:
             pipeline.reset()
 
+    def _name(self):
+        raise NotImplementedError
+
     def _query(self, db):
         return db.select(query=self.query, params=self.params)
 
     def _with_pipeline(key, row, pipeline):
         raise NotImplementedError
+
+    def __str__(self):
+        return "{0}(query=<{1}>, key_pattern=<{2}>)"\
+            .format(self._name(), self.query, self.key_pattern)
 
 class ToHashRule(Db2RedisRule):
 
@@ -48,6 +55,9 @@ class ToHashRule(Db2RedisRule):
     def _with_pipeline(self, key, row, rows, pipeline):
         pipeline.hmset(key, rows.make_dict(row))
 
+    def _name(self):
+        return "to_hash"
+
 class ToListRule(Db2RedisRule):
 
     def __init__(self, *args, **kwargs):
@@ -56,6 +66,9 @@ class ToListRule(Db2RedisRule):
 
     def _with_pipeline(self, key, row, rows, pipeline):
         pipeline.lpush(key, self.transform(row))
+
+    def _name(self):
+        return "to_list"
         
 class ToSetRule(Db2RedisRule):
 
@@ -65,6 +78,9 @@ class ToSetRule(Db2RedisRule):
 
     def _with_pipeline(self, key, row, rows, pipeline):
         pipeline.sadd(key, self.transform(row))
+
+    def _name(self):
+        return "to_set"
 
 class ToSortedSetRule(ToSetRule):
     def __init__(self, *args, **kwargs):
@@ -88,3 +104,10 @@ class ToSortedSetRule(ToSetRule):
     def _score_is_number(self):
         score_type = type(self.score)
         return score_type in [type(1), type(1L), type(0.1)]
+
+    def _name(self):
+        return "to_sorted_set"
+
+    def __str__(self):
+        return "{0}(query=<{1}>, key_pattern=<{2}>, score=<{3}>)" \
+            .format(self._name(), self.query, self.key_pattern, self.score)

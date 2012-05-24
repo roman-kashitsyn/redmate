@@ -1,5 +1,8 @@
 import db
 import rules
+import logging
+
+log = logging.getLogger('redmate')
 
 def Db(connection):
     return db.Adapter(connection)
@@ -50,5 +53,8 @@ class Mapper(object):
         Runs the mapping process.
         """
         db, redis = self.db, self.redis
+        log.info("Got {0} rules to run", len(self._rules))
         for rule in self._rules:
+            log.info("Running rule: ", rule)
             rule.run(db, redis, max_pipelined=self.max_pipelined)
+        log.info("Done")
