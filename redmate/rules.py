@@ -1,12 +1,17 @@
 import keyformat
+import logging
 
 def take_first(row):
     return row[0]
 
+def flatten(line):
+    return line.replace("\n", "")
+
 def truncate(line, max_length=100, suffix="."):
-    if len(line) > max_length:
-        return line[:max_length - 3] + suffix * 3
-    return line
+    l = flatten(line)
+    if len(l) > max_length:
+        return l[:max_length - 3] + suffix * 3
+    return l
 
 class Db2RedisRule(object):
     def __init__(self, *args, **kwargs):
@@ -22,11 +27,17 @@ class Db2RedisRule(object):
     def run(self, db, redis, max_pipelined=None):
         rows = self._query(db)
         if not rows:
-            return
+            return 0
         
+        num_records = 0
         for row in rows:
             key = self.key_pattern.format(row, rows)
-            self._with_pipeline(key, row, rows, redis)
+            try:
+                self._with_pipeline(key, row, rows, redis)
+            except Exception as e:
+                logging.warning("Error %s on row %s", e, rows.make_dict(row))  
+            num_records += 1
+        return num_records
 
     def _name(self):
         raise NotImplementedError
@@ -84,7 +95,10 @@ class ToSortedSetRule(ToSetRule):
             raise ValueError("No score function or value specified")
 
     def _with_pipeline(self, key, row, rows, pipeline):
-        pipeline.zadd(key, self._get_score(row, rows), self.transform(row))
+        score = self._get_score(row, rows)
+        if score is None:
+            score = 0
+        pipeline.zadd(key, score, self.transform(row))
 
     def _get_score(self, row, rows):
         if callable(self.score):

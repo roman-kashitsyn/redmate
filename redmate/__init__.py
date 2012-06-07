@@ -56,5 +56,6 @@ class Mapper(object):
         log.info("Got %d rules to run", len(self._rules))
         for rule in self._rules:
             log.info("Running rule: %s", rule)
-            rule.run(db, redis, max_pipelined=self.max_pipelined)
+            num_records = rule.run(db, redis, max_pipelined=self.max_pipelined)
+            log.info("Records mapped: %s", num_records)
         log.info("Done")
