@@ -3,6 +3,11 @@ import keyformat
 def take_first(row):
     return row[0]
 
+def truncate(line, max_length=100, suffix="."):
+    if len(line) > max_length:
+        return line[:max_length - 3] + suffix * 3
+    return line
+
 class Db2RedisRule(object):
     def __init__(self, *args, **kwargs):
         self.table = kwargs.get("table")
@@ -34,7 +39,7 @@ class Db2RedisRule(object):
 
     def __str__(self):
         return "{0}(query=<{1}>, key_pattern=<{2}>)"\
-            .format(self._name(), self.query, self.key_pattern)
+            .format(self._name(), truncate(self.query, max_length=30), self.key_pattern)
 
 class ToHashRule(Db2RedisRule):
 
@@ -99,4 +104,5 @@ class ToSortedSetRule(ToSetRule):
 
     def __str__(self):
         return "{0}(query=<{1}>, key_pattern=<{2}>, score=<{3}>)" \
-            .format(self._name(), self.query, self.key_pattern, self.score)
+            .format(self._name(), truncate(self.query, max_length=30), \
+                        self.key_pattern, self.score)
