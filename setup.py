@@ -8,7 +8,7 @@ with open(readme) as f:
 
 setup(
     name = "RedMate",
-    version = "0.1.1",
+    version = "0.1.2",
     description = "Tools for migration from relational DB to redis",
     long_description = long_description,
     author = "Roman Kashitsyn",

@@ -19,20 +19,9 @@ class Db2RedisRule(object):
         if not rows:
             return
         
-        cmd_count = 0
-        pipeline = redis.pipeline()
-        try:
-            for row in rows:
-                key = self.key_pattern.format(row, rows)
-                self._with_pipeline(key, row, rows, pipeline)
-                cmd_count += 1
-                if max_pipelined and cmd_count >= max_pipelined:
-                    pipeline.execute()
-                    cmd_count = 0
-            if cmd_count:
-                pipeline.execute()
-        finally:
-            pipeline.reset()
+        for row in rows:
+            key = self.key_pattern.format(row, rows)
+            self._with_pipeline(key, row, rows, redis)
 
     def _name(self):
         raise NotImplementedError
