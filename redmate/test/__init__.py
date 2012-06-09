@@ -7,6 +7,7 @@ from testdb import DbAdapterTest
 from testkeyformat import KeyFormatTest
 from testmapsortedset import MapToSortedSetTest
 from testpipeline import PipeliningTest
+from testwriter import RedisWriterTest
 
 def mock_row_iterator(rows, cols):
     it_mock = MagicMock(name="row-iterator-mock")
@@ -18,7 +19,7 @@ def mock_row_iterator(rows, cols):
 def all_tests():
     test_cases = [
         DbAdapterTest, KeyFormatTest, PipeliningTest, MapToHashTest,
-        MapToSetTest,  MapToListTest, MapToSortedSetTest]
+        MapToSetTest,  MapToListTest, MapToSortedSetTest, RedisWriterTest]
     suite = unittest.TestSuite()
     for test_case in test_cases:
         suite.addTest(unittest.makeSuite(test_case))

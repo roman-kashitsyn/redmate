@@ -28,16 +28,27 @@ class Db2RedisRule(object):
         rows = self._query(db)
         if not rows:
             return 0
-        
-        num_records = 0
-        for row in rows:
-            key = self.key_pattern.format(row, rows)
-            try:
-                self._with_pipeline(key, row, rows, redis)
-            except Exception as e:
-                logging.warning("Error %s on row %s", e, rows.make_dict(row))  
-            num_records += 1
-        return num_records
+
+        records_count = 0
+        cmd_count = 0
+        pipeline = redis.pipeline()
+        try:
+            for row in rows:
+                key = self.key_pattern.format(row, rows)
+                try:
+                    self._with_pipeline(key, row, rows, pipeline)
+                    cmd_count += 1
+                    if max_pipelined and cmd_count >= max_pipelined:
+                        pipeline.execute()
+                        cmd_count = 0
+                except Exception as e:
+                    logging.warning("Error %s on row %s", e, rows.make_dict(row))
+                records_count += 1
+            if cmd_count:
+                pipeline.execute()
+        finally:
+            pipeline.reset()
+        return records_count
 
     def _name(self):
         raise NotImplementedError
@@ -74,7 +85,7 @@ class ToListRule(Db2RedisRule):
 
     def _name(self):
         return "to_list"
-        
+
 class ToSetRule(Db2RedisRule):
 
     def __init__(self, *args, **kwargs):

@@ -29,8 +29,8 @@ class PipeliningTest(unittest.TestCase):
         """
         self.redis.pipeline().sadd.side_effect = Exception("unexpected error")
         self.mapper.to_set(query="query", key_pattern="pat")
-        self.assertRaises(Exception, self.mapper.run)
+        self.mapper.run()
 
         self.redis.pipeline.assert_called_with()
         self.redis.pipeline().reset.assert_called_with()
-        
+
