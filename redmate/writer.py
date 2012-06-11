@@ -73,15 +73,14 @@ class RedisWriter(object):
         """
         self._execute("lpush", key, value)
 
-    def put_to_hash(self, key, hkey, value):
+    def put_to_hash(self, key, dictionary):
         """
         Puts given value to key of the hash.
 
         key -- key of the redis hash
-        hkey -- key in the hash
-        value -- value to put
+        dictionary -- dictionary to put
         """
-        self._execute("hset", key, hkey, value)
+        self._execute('hmset', key, dictionary)
 
     def _execute(self, cmd, *args):
         command = getattr(self.executor, cmd)
@@ -93,3 +92,22 @@ class RedisWriter(object):
             self.cmd_num += 1
         command(*args)
 
+class DbOutput(object):
+    """
+    Writer that writes to database.
+    """
+    def __init__(self, connection, query):
+        """
+        Initializes output with connection and query.
+
+        connection -- connection compatible with PEP 249
+        query -- query to use for update operations
+        """
+        self.conn = connection
+        self.query = query
+
+    def __call__(self, reader, entry):
+        """
+        Inserts values using query.
+        """
+        conn.execute(self.query, values)

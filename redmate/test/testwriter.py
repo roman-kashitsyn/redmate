@@ -17,10 +17,10 @@ class RedisWriterTest(unittest.TestCase):
 
     def test_put_to_hash(self):
         with RedisWriter(self.redis) as r:
-            r.put_to_hash("key", "h", "v")
+            r.put_to_hash("key", {"h": "v"})
 
         self.redis.pipeline.assert_called_with()
-        self.redis.pipeline().hput("key", "h", "v")
+        self.redis.pipeline().hmset("key", {"h": "v"})
         self.redis.pipeline().execute.assert_called_with()
 
     def test_add_to_list(self):

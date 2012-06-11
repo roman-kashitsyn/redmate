@@ -1,1 +1,4 @@
 *.pyc
+.ropeproject
+.vimrc
+.exrc

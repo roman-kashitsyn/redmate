@@ -8,7 +8,6 @@ class RowIterator(object):
     """
     def __init__(self, cursor):
         self.cursor = cursor
-        self.as_hash = as_hash
         self.columns = [d[0] for d in self.cursor.description]
 
     def __iter__(self):
@@ -18,10 +17,7 @@ class RowIterator(object):
         result = self.cursor.fetchone()
         if not result:
             raise StopIteration
-        if self.as_hash:
-            return self.make_dict(result)
-        else:
-            return result
+        return result
 
     def make_dict(self, row):
         return dict(zip(self.columns, row))
@@ -41,7 +37,7 @@ class DbReader(object):
         """
         self.conn = connection
 
-    def select(self, query, params=None):
+    def __call__(self, query, params=None):
         """
         Executes search query and returns row iterator.
 
@@ -52,5 +48,5 @@ class DbReader(object):
             cursor.execute(query, params)
         else:
             cursor.execute(query)
-        return RowIterator(cursor, as_hash)
+        return RowIterator(cursor)
 
