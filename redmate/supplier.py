@@ -1,4 +1,5 @@
-import reader
+"""Suppliers module.
+"""
 
 class DbSupplier(object):
 
@@ -35,4 +36,46 @@ class DbSupplier(object):
 
     def __next__(self):
         return self.next()
+
+class RedisSupplier(object):
+
+    def __init__(self, keys_pattern, columns):
+        self.keys_pattern = keys_pattern
+        self.columns = columns
+
+    def __enter__(self):
+        self.keys = self.redis_reader.keys(self.keys_pattern)
+        return self
+
+    def __exit__(self, *args):
+        self.keys = None
+        self.key_set_it = None
+
+    def __call__(self, redis_reader):
+        self.redis_reader = redis_reader
+        return self
+
+    def __iter__(self):
+        self.key_set_it = iter(self.keys)
+        return self
+
+    def next(self):
+        next_key = next(self.key_set_it)
+        entry = self._read(next_key)
+        return entry
+
+    def __next__(self):
+        return self.next()
+
+    def make_dict(self, row):
+        return dict(zip(self.columns, row))
+
+    def _read(self, next_key):
+        raise NotImplementedError
+
+
+class RedisHashSupplier(RedisSupplier):
+
+    def _read(self, next_key):
+        return self.redis_reader.read_hash(next_key, self.columns)
 

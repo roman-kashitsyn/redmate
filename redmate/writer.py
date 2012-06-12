@@ -92,22 +92,31 @@ class RedisWriter(object):
             self.cmd_num += 1
         command(*args)
 
-class DbOutput(object):
+class DbWriter(object):
     """
-    Writer that writes to database.
+    Writer that writes to DataBase.
     """
-    def __init__(self, connection, query):
+
+    def __init__(self, connection):
         """
         Initializes output with connection and query.
 
         connection -- connection compatible with PEP 249
-        query -- query to use for update operations
         """
         self.conn = connection
-        self.query = query
 
-    def __call__(self, reader, entry):
+    def __enter__(self):
+        self.cursor = self.conn.cursor()
+        return self
+
+    def __exit__(self, *args):
+        self.cursor.close()
+
+    def update(self, query, params):
         """
         Inserts values using query.
+
+        query -- query to execute
+        params -- query params
         """
-        conn.execute(self.query, values)
+        self.cursor.execute(query, params)

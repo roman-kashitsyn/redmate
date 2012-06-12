@@ -50,3 +50,19 @@ class DbReader(object):
             cursor.execute(query)
         return RowIterator(cursor)
 
+class RedisReader(object):
+    """
+    Reader for reader data structures.
+    """
+    def __init__(self, redis):
+        self.redis = redis
+
+    def keys(self, pattern):
+        return self._command("keys", pattern)
+
+    def read_hash(self, key, columns):
+        return self._command("hmget", key, columns)
+
+    def _command(self, name, *args, **kwargs):
+        cmd = getattr(self.redis, name)
+        return cmd(*args, **kwargs)

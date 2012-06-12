@@ -1,9 +1,10 @@
 """
 Mapping rules module.
 """
-from writer import RedisWriter
-from supplier import DbSupplier
+import writer
+import reader
 import consumer
+import supplier
 
 class MappingRule(object):
 
@@ -44,32 +45,41 @@ class Mapper(object):
 class Db2RedisMapper(Mapper):
 
     def __init__(self, connection, redis):
-        super(Db2RedisMapper, self).__init__(connection, RedisWriter(redis))
+        super(Db2RedisMapper, self).__init__(connection, writer.RedisWriter(redis))
 
     def map(self, *args, **kwargs):
-        self.__supplier = DbSupplier(*args, **kwargs)
+        self.__supplier = supplier.DbSupplier(*args, **kwargs)
         return self
 
     def to_string(self, *args, **kwargs):
-        self._make_rule(self.__supplier, \
-                consumer.RedisStringConsumer(*args, **kwargs))
+        self.__make_rule(consumer.RedisStringConsumer(*args, **kwargs))
 
     def to_hash(self, *args, **kwargs):
-        self._make_rule(self.__supplier, \
-                consumer.RedisHashConsumer(*args, **kwargs))
+        self.__make_rule(consumer.RedisHashConsumer(*args, **kwargs))
 
     def to_set(self, *args, **kwargs):
-        self._make_rule(self.__supplier, \
-                consumer.RedisSetConsumer(*args, **kwargs))
+        self.__make_rule(consumer.RedisSetConsumer(*args, **kwargs))
 
     def to_list(self, *args, **kwargs):
-        self._make_rule(self.__supplier, \
-                consumer.RedisListConsumer(*args, **kwargs))
+        self.__make_rule(consumer.RedisListConsumer(*args, **kwargs))
 
     def to_sorted_set(self, *args, **kwargs):
-        self._make_rule(self.__supplier, \
-                consumer.RedisSortedSetConsumer(*args, **kwargs))
+        self.__make_rule(consumer.RedisSortedSetConsumer(*args, **kwargs))
 
-    def _make_rule(self, supplier, consumer):
-        self.add_rule(MappingRule(supplier, consumer))
+    def __make_rule(self, consumer):
+        self.add_rule(MappingRule(self.__supplier, consumer))
+
+class Redis2DbMapper(Mapper):
+    def __init__(self, redis, connection):
+        redis_reader = reader.RedisReader(redis)
+        db_writer = writer.DbWriter(connection)
+        super(Redis2DbMapper, self).__init__(redis_reader, db_writer)
+
+    def map_hash(self, *args, **kwargs):
+        self.__supplier = supplier.RedisHashSupplier(*args, **kwargs)
+        return self
+
+    def to(self, *args, **kwargs):
+        cons = consumer.DbConsumer(*args, **kwargs)
+        self.add_rule(MappingRule(self.__supplier, cons))
 

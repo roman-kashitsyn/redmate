@@ -1,6 +1,16 @@
 from keyformat import KeyPattern
 import utils
 
+class DbConsumer(object):
+    def __init__(self, query):
+        self.query = query
+
+    def __call__(self, writer, supplier, entry):
+        writer.update(self.query, entry)
+
+    def __str__(self):
+        return "DbConsumer(query=" + query + ")"
+
 class RedisConsumer(object):
     def __init__(self, key_pattern, transform=None):
         self.key_pattern = KeyPattern(key_pattern)
@@ -26,7 +36,7 @@ class RedisConsumer(object):
             return entry
 
     def __str__(self):
-        return self._name_
+        return "to_{0}(key_pattern={1})".format(self._name_, self.key_pattern)
 
 class RedisStringConsumer(RedisConsumer):
     _name_ = 'string'
@@ -98,3 +108,4 @@ class RedisListConsumer(RedisConsumer):
 
     def _consume(self, key, writer, supplier, entry):
         writer.add_to_list(key, self._apply_transform(entry))
+
