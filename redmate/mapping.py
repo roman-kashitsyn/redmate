@@ -1,10 +1,14 @@
 """
 Mapping rules module.
 """
-import writer
-import reader
-import consumer
-import supplier
+import logging
+
+from . import writer
+from . import reader
+from . import consumer
+from . import supplier
+
+log = logging.getLogger('redmate.mapping')
 
 class MappingRule(object):
 
@@ -22,8 +26,7 @@ class MappingRule(object):
         return processed
 
     def __str__(self):
-        return "Mapping {" + str(self.supplier) + " -> " + \
-                str(self.consumer) + "}"
+        return '{{ {0} -> {1} }}'.format(self.supplier, self.consumer)
 
 class Mapper(object):
 
@@ -39,7 +42,10 @@ class Mapper(object):
         total = 0
         with self.writer as writer:
             for rule in self._rules:
-                total += rule(self.reader, writer)
+                log.info('Running rule %s', rule)
+                processed = rule(self.reader, writer)
+                log.info('Processed %d records', processed)
+                total += processed
         return total
 
 class Db2RedisMapper(Mapper):
@@ -78,6 +84,12 @@ class Redis2DbMapper(Mapper):
     def map_hash(self, *args, **kwargs):
         self.__supplier = supplier.RedisHashSupplier(*args, **kwargs)
         return self
+
+    def map_set(self, *args, **kwargs):
+        self.__supplier = supplier.RedisSetSupplier(*args, **kwargs)
+
+    def map_sorted_set(self, *args, **kwargs):
+        self.__supplier = supplier.RedisSortedSetSupplier(*args, **kwargs)
 
     def to(self, *args, **kwargs):
         cons = consumer.DbConsumer(*args, **kwargs)

@@ -1,5 +1,5 @@
-from keyformat import KeyPattern
-import utils
+from .keyformat import KeyPattern
+from . import utils
 
 class DbConsumer(object):
     def __init__(self, query):
@@ -9,7 +9,7 @@ class DbConsumer(object):
         writer.update(self.query, entry)
 
     def __str__(self):
-        return "DbConsumer(query=" + query + ")"
+        return 'db(query={0})'.format(self.query)
 
 class RedisConsumer(object):
     def __init__(self, key_pattern, transform=None):
@@ -36,7 +36,7 @@ class RedisConsumer(object):
             return entry
 
     def __str__(self):
-        return "to_{0}(key_pattern={1})".format(self._name_, self.key_pattern)
+        return "redis_{0}(key_pattern={1})".format(self._name_, self.key_pattern)
 
 class RedisStringConsumer(RedisConsumer):
     _name_ = 'string'

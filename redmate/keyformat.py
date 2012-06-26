@@ -11,4 +11,4 @@ class KeyPattern(object):
 
     def __str__(self):
         return self.pattern
-        
+

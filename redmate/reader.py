@@ -63,6 +63,9 @@ class RedisReader(object):
     def read_hash(self, key, columns):
         return self._command("hmget", key, columns)
 
+    def read_set(self, key):
+        return self._command("smembers", key)
+
     def _command(self, name, *args, **kwargs):
         cmd = getattr(self.redis, name)
         return cmd(*args, **kwargs)

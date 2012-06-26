@@ -1,5 +1,6 @@
 """Suppliers module.
 """
+from . import utils
 
 class DbSupplier(object):
 
@@ -37,6 +38,9 @@ class DbSupplier(object):
     def __next__(self):
         return self.next()
 
+    def __str__(self):
+        return 'db(query={0})'.format(utils.truncate(self.query, 30))
+
 class RedisSupplier(object):
 
     def __init__(self, keys_pattern, columns):
@@ -72,6 +76,9 @@ class RedisSupplier(object):
 
     def _read(self, next_key):
         raise NotImplementedError
+
+    def __str__(self):
+        return "redis(key_pattern=%s)" % self.keys_pattern
 
 
 class RedisHashSupplier(RedisSupplier):
