@@ -2,17 +2,19 @@ from .keyformat import KeyPattern
 from . import utils
 
 class DbConsumer(object):
-    def __init__(self, query):
+    def __init__(self, writer, query):
+        self.writer = writer
         self.query = query
 
-    def __call__(self, writer, supplier, entry):
-        writer.update(self.query, entry)
+    def __call__(self, message):
+        self.writer.update(self.query, message.attributes)
 
     def __str__(self):
         return 'db(query={0})'.format(self.query)
 
 class RedisConsumer(object):
-    def __init__(self, key_pattern, transform=None):
+    def __init__(self, writer, key_pattern, transform=None):
+        self.writer = writer
         self.key_pattern = KeyPattern(key_pattern)
 
         if transform and not callable(transform):
@@ -22,11 +24,11 @@ class RedisConsumer(object):
         if self._need_transform_ and not self.transform:
             self.transform = utils.take_first
 
-    def __call__(self, writer, supplier, entry):
-        key = self.key_pattern.format(entry, supplier)
-        self._consume(key, writer, supplier, entry)
+    def __call__(self, message):
+        key = self.key_pattern.format(message)
+        self._consume(key, message)
 
-    def _consume(self, key, writer, supplier, entry):
+    def _consume(self, key, message):
         raise NotImplementedError
 
     def _apply_transform(self, entry):
@@ -42,16 +44,15 @@ class RedisStringConsumer(RedisConsumer):
     _name_ = 'string'
     _need_transform_ = True
 
-    def _consume(self, key, writer, supplier, entry):
-        writer.set(key, str(self._apply_transform(entry)))
+    def _consume(self, key, message):
+        self.writer.set(key, str(self._apply_transform(message.attributes)))
 
 class RedisHashConsumer(RedisConsumer):
     _name_ = "hash"
     _need_transform_ = False
 
-    def _consume(self, key, writer, supplier, entry):
-        hash_value = supplier.make_dict(entry)
-        writer.put_to_hash(key, self._apply_transform(hash_value))
+    def _consume(self, key, message):
+        self.writer.put_to_hash(key, self._apply_transform(message.as_dict()))
 
 class RedisSetConsumer(RedisConsumer):
     _name_ = "set"
@@ -60,27 +61,27 @@ class RedisSetConsumer(RedisConsumer):
     def __init__(self, *args, **kwargs):
         super(RedisSetConsumer, self).__init__(*args, **kwargs)
 
-    def _consume(self, key, writer, supplier, entry):
-        writer.add_to_set(key, self._apply_transform(entry))
+    def _consume(self, key, message):
+        self.writer.add_to_set(key, self._apply_transform(message.attributes))
 
 class RedisSortedSetConsumer(RedisConsumer):
     _name_ = "sorted_set"
     _need_transform_ = True
 
-    def __init__(self, key_pattern, score, transform=None):
-        super(RedisSortedSetConsumer, self).__init__(key_pattern, transform)
+    def __init__(self, writer, key_pattern, score, transform=None):
+        super(RedisSortedSetConsumer, self).__init__(writer, key_pattern, transform)
         self.score = score
         self._get_score = self._make_score_func(score)
 
-    def _consume(self, key, writer, supplier, entry):
-        score = self._get_score(supplier, entry)
-        writer.add_to_sorted_set(key, score, self._apply_transform(entry))
+    def _consume(self, key, message):
+        score = self._get_score(message)
+        self.writer.add_to_sorted_set(key, score, self._apply_transform(message.attributes))
 
     def _make_score_func(self, score):
         if self._score_is_number():
             return self._get_score_by_column_index
         elif self._score_is_float():
-            return lambda s, e: self.score
+            return lambda msg: self.score
         elif type(score) is str:
             return self._get_score_by_column_name
         elif callable(score):
@@ -94,18 +95,17 @@ class RedisSortedSetConsumer(RedisConsumer):
     def _score_is_float(self):
         return type(self.score) is type(0.0)
 
-    def _get_score_by_column_name(self, supplier, entry):
-        with_cols = supplier.make_dict(entry)
-        return with_cols[self.score]
+    def _get_score_by_column_name(self, message):
+        return message.as_dict()[self.score]
 
-    def _get_score_by_column_index(self, supplier, entry):
-        return entry[self.score]
+    def _get_score_by_column_index(self, message):
+        return message.attributes[self.score]
 
 
 class RedisListConsumer(RedisConsumer):
     _name_ = "list"
     _need_transform_ = True
 
-    def _consume(self, key, writer, supplier, entry):
-        writer.add_to_list(key, self._apply_transform(entry))
+    def _consume(self, key, message):
+        self.writer.add_to_list(key, self._apply_transform(message.attributes))
 

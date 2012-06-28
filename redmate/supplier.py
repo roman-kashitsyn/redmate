@@ -1,6 +1,7 @@
 """Suppliers module.
 """
 from . import utils
+from . import messaging
 
 class DbSupplier(object):
 
@@ -30,10 +31,7 @@ class DbSupplier(object):
         result = self.cursor.fetchone()
         if not result:
             raise StopIteration
-        return result
-
-    def make_dict(self, row):
-        return dict(zip(self.columns, row))
+        return messaging.Message(self.columns, result)
 
     def __next__(self):
         return self.next()
@@ -66,7 +64,7 @@ class RedisSupplier(object):
     def next(self):
         next_key = next(self.key_set_it)
         entry = self._read(next_key)
-        return entry
+        return messaging.Message(self.columns, entry)
 
     def __next__(self):
         return self.next()

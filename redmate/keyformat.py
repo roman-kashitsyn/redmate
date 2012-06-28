@@ -5,9 +5,8 @@ class KeyPattern(object):
             raise ValueError("Empty pattern is not a valid pattern")
         self.pattern = pattern
 
-    def format(self, row, rows):
-        params = rows.make_dict(row)
-        return self.pattern.format(*row, **params)
+    def format(self, message):
+        return self.pattern.format(*message.attributes, **message.as_dict())
 
     def __str__(self):
         return self.pattern

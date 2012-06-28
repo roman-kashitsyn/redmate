@@ -19,7 +19,7 @@ class RedisHashSupplierTest(unittest.TestCase):
     def test_hash_supplier_is_iterable(self):
         vals = None
         with self.supplier(self.redis_reader) as s:
-            vals = tuple([x for x in s])
+            vals = tuple([x.attributes for x in s])
         self.assertEqual(vals, self.values)
         self.redis_reader.keys.assert_called_with(self.key_pattern)
         self.redis_reader.read_hash.assert_any_call(self.keys[0], self.columns)
@@ -28,9 +28,9 @@ class RedisHashSupplierTest(unittest.TestCase):
     def test_hash_supplier_make_dict(self):
         with self.supplier(self.redis_reader) as s:
             s_it = iter(s)
-            dict_1 = s.make_dict(next(s_it))
+            dict_1 = next(s_it).as_dict()
             self.assertEqual(dict_1, {"val1": "key:1:val:1", "val2": "key:1:val:2"})
-            dict_2 = s.make_dict(next(s_it))
+            dict_2 = next(s_it).as_dict()
             self.assertEqual(dict_2, {"val1": "key:2:val:1", "val2": "key:2:val:2"})
 
 if __name__ == "__main__":

@@ -83,7 +83,7 @@ class Db2RedisMapperTest(unittest.TestCase):
     def test_map_to_sorted_set_by_score_function(self):
         self.mapper.map(query = self.query) \
                 .to_sorted_set(key_pattern='zset:{id}', \
-                score = lambda s, e: len(e))
+                score = lambda msg: len(msg.attributes))
         self.mapper.run()
 
         self.common_asserts()
